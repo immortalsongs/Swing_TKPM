@@ -8,8 +8,17 @@ public class grappling : MonoBehaviour
     public LineRenderer lineRenderer;
     public DistanceJoint2D distanceJoint;
 
+    public Animator Animator;
+
+    public CharacterController2D controller;
+    public float runspeed = 40f;
+
     public float force = 5f;
     public Rigidbody2D rb;
+
+    float horizontalMove = 0;
+    bool jump = false;
+    
 
     // Start is called before the first frame update
     void Start()
@@ -21,21 +30,31 @@ public class grappling : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //horizontalMove = 0;
         Vector2 mousePos = (Vector2)mainCamnera.ScreenToWorldPoint(Input.mousePosition);
-        //Debug.Log(rb.velocity.magnitude);
+        
         //print(mousePos);
         mainCamnera.transform.position=new Vector3(transform.position.x,transform.position.y,-10);
-        if(Input.GetKeyDown(KeyCode.Mouse0))
+        if(Input.GetKeyDown(KeyCode.Mouse1))
         {
-            Vector2 pullForce = new Vector2(mousePos.x - transform.position.x, 0);
+            if (rb.velocity.x > 0)
+            {
+                transform.localScale = new Vector3(8, 8, 1);
+            }
+            else if (rb.velocity.x < 0)
+            {
+                transform.localScale = new Vector3(-8, 8, 1);
+            }
+
+            Vector3 pullForce = new Vector3(mousePos.x - transform.position.x, 0);
 
             transform.position += (Vector3)pullForce.normalized*0.1f;
             if (rb.velocity.magnitude <= 20)
             {
-                rb.velocity += pullForce * force;
+                rb.velocity += (Vector2)pullForce * force;
             }
-
-            
+            //Quaternion rotation = Quaternion.LookRotation(new Vector3(0, 0, mousePos.x - transform.position.x));
+            //transform.rotation = rotation;
 
             lineRenderer.SetPosition(0, mousePos);
             lineRenderer.SetPosition(1, transform.position);
@@ -45,22 +64,52 @@ public class grappling : MonoBehaviour
 
             lineRenderer.enabled = true;
         }
-        else if (Input.GetKeyUp(KeyCode.Mouse0))
+        else if (Input.GetKeyUp(KeyCode.Mouse1))
         {
             distanceJoint.enabled = false;
             lineRenderer.enabled = false;
+            transform.rotation = Quaternion.Euler(Vector3.up);
+        }
+        else
+        {
+            horizontalMove = Input.GetAxisRaw("Horizontal")*runspeed;
+            if (horizontalMove != 0)
+            {
+                Animator.SetBool("isMoving", true);
+            }
+            else Animator.SetBool("isMoving", false);
+
+            if (horizontalMove > 0)
+            {
+                transform.localScale = new Vector3(8, 8, 1);
+            }
+            else if (horizontalMove < 0)
+            {
+                transform.localScale = new Vector3(-8, 8, 1);
+            }
+            if (Input.GetButtonDown("Jump"))
+            {
+                Animator.SetBool("jump", true);
+                jump = true;
+            }
         }
         
         if(distanceJoint.enabled)
         {
             lineRenderer.SetPosition(1, transform.position);
         }
-
+        
     }
-
+    private void FixedUpdate()
+    {
+        controller.Move(horizontalMove*Time.fixedDeltaTime,false,jump);
+        jump = false;
+    }
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.tag=="death")
+        transform.rotation = Quaternion.Euler(0,0,0);
+        Animator.SetBool("jump", false);
+        if (collision.gameObject.tag=="death")
         {
             transform.position = new Vector3(0, 0, 0);
         }
