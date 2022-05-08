@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Cinemachine;
+using UnityEngine.SceneManagement;
+using UnityEngine.Timeline;
+using UnityEngine.Playables;
 
 public class grappling : MonoBehaviour
 {
     public Camera mainCamnera;
     public LineRenderer lineRenderer;
     public DistanceJoint2D distanceJoint;
-
+    public AudioSource playerSource;
     public Animator Animator;
 
     public CharacterController2D controller;
@@ -22,6 +25,8 @@ public class grappling : MonoBehaviour
     bool jump = false;
     public bool isFacing = true;
 
+    bool isDashed=false;
+
     public Transform shootPoint;
     public GameObject bullet;
 
@@ -29,8 +34,10 @@ public class grappling : MonoBehaviour
     bool isDead;
 
     int Hp = 100;
-    int NumBullet = 4;
+    int damage = 100;
+    int NumBullet = 10;
     bool OutOfBu;
+    bool isAttacking=false;
 
     public Text countDown;
     float countdown;
@@ -41,6 +48,15 @@ public class grappling : MonoBehaviour
 
     public Slider HPslider, Bulletslider;
 
+    int jumpCount = 0;
+
+    BoxCollider2D boxCol;
+
+    int windCount = 0;
+
+    Scene scene;
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -50,10 +66,17 @@ public class grappling : MonoBehaviour
         Checkpoint= new Vector3(-140.7f, -125.9f, 0);
         isDead = false;
 
+        playerSource = GetComponent<AudioSource>();
+
         var camera = Camera.main;
         var brain = (camera == null) ? null : camera.GetComponent<CinemachineBrain>();
         vcam = (brain == null) ? null : brain.ActiveVirtualCamera as CinemachineVirtualCamera;
 
+        boxCol = gameObject.GetComponent<BoxCollider2D>();
+
+        scene = SceneManager.GetActiveScene();
+        //SoundManager.soundManager.PlaySound("start");
+        //audioS.PlayOneShot(_start);
     }
 
     // Update is called once per frame
@@ -65,39 +88,41 @@ public class grappling : MonoBehaviour
         {
             //horizontalMove = 0;
             Vector2 mousePos = (Vector2)mainCamnera.ScreenToWorldPoint(Input.mousePosition);
-
+            Vector3 mousePos3 = (Vector2)mainCamnera.ScreenToWorldPoint(Input.mousePosition);
             //print(mousePos);
             mainCamnera.transform.position = new Vector3(transform.position.x, transform.position.y, -10);
-            if (Input.GetKeyDown(KeyCode.Mouse1))
+            if (Input.GetKeyDown(KeyCode.Mouse0))
             {
-                //if (rb.velocity.x > 0)
-                //{
-                //    transform.rotation = Quaternion.Euler(0, transform.rotation.y, 0);
-                //}
-                //else if (rb.velocity.x < 0)
-                //{
-                //    transform.rotation = Quaternion.Euler(0, transform.rotation.y, 0);
-                //}
-
-                Vector3 pullForce = new Vector3(mousePos.x - transform.position.x, 0);
-
-                transform.position += (Vector3)pullForce.normalized * 0.1f;
-                if (rb.velocity.magnitude <= 20)
+                if (NumBullet > 0)
                 {
-                    rb.velocity += (Vector2)pullForce * force;
+
+                    int hockMask = LayerMask.GetMask("hockAble");
+                    bool check = Physics2D.Raycast(mousePos, Vector2.down, 0.5f, hockMask);
+
+
+                    if (true)
+                    {
+                        Vector3 pullForce = new Vector3(mousePos.x - transform.position.x, 0);
+
+                        transform.position += (Vector3)pullForce.normalized * 0.1f;
+                        if (rb.velocity.magnitude <= 20)
+                        {
+                            rb.velocity += (Vector2)pullForce * force;
+                        }
+                        //Quaternion rotation = Quaternion.LookRotation(new Vector3(0, 0, mousePos.x - transform.position.x));
+                        //transform.rotation = rotation;
+
+                        lineRenderer.SetPosition(0, mousePos);
+                        lineRenderer.SetPosition(1, transform.position);
+
+                        distanceJoint.connectedAnchor = mousePos;
+                        distanceJoint.enabled = true;
+
+                        lineRenderer.enabled = true;
+                    }
                 }
-                //Quaternion rotation = Quaternion.LookRotation(new Vector3(0, 0, mousePos.x - transform.position.x));
-                //transform.rotation = rotation;
-
-                lineRenderer.SetPosition(0, mousePos);
-                lineRenderer.SetPosition(1, transform.position);
-
-                distanceJoint.connectedAnchor = mousePos;
-                distanceJoint.enabled = true;
-
-                lineRenderer.enabled = true;
             }
-            else if (Input.GetKeyUp(KeyCode.Mouse1))
+            else if (Input.GetKeyUp(KeyCode.Mouse0))
             {
                 distanceJoint.enabled = false;
                 lineRenderer.enabled = false;
@@ -106,16 +131,20 @@ public class grappling : MonoBehaviour
             else
             {
                 horizontalMove = Input.GetAxisRaw("Horizontal") * runspeed;
+                //Debug.Log(horizontalMove);
                 if (horizontalMove != 0)
                 {
                     Animator.SetBool("isMoving", true);
                 }
                 else Animator.SetBool("isMoving", false);
 
-                if (Input.GetButtonDown("Jump"))
+                if (Input.GetButtonDown("Jump") && jumpCount<2)
                 {
+                    SoundManager.soundManager.PlayerSound("jump2");
                     Animator.SetBool("jump", true);
                     jump = true;
+                    controller.Move(horizontalMove * Time.fixedDeltaTime, false, jump);
+                    jumpCount++;
                 }
             }
 
@@ -124,19 +153,19 @@ public class grappling : MonoBehaviour
                 lineRenderer.SetPosition(1, transform.position);
             }
 
-            if (NumBullet > 0 && !OutOfBu)
-            {
-                if (Input.GetKeyDown(KeyCode.Mouse0))
-                {
-                    Shoot();
-                    NumBullet--;
-                    if(NumBullet==0)
-                    {
-                        OutOfBu = true;
-                        StartCoroutine(Reload());
-                    }
-                }
-            }
+            //if (NumBullet > 0 && !OutOfBu)
+            //{
+            //    if (Input.GetKeyDown(KeyCode.Mouse1))
+            //    {
+            //        Shoot();
+            //        NumBullet--;
+            //        if(NumBullet==0)
+            //        {
+            //            OutOfBu = true;
+            //            StartCoroutine(Reload());
+            //        }
+            //    }
+            //}
             
         }
         
@@ -166,6 +195,13 @@ public class grappling : MonoBehaviour
         }
 
 
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            if(!isDashed)
+                Dash();
+        }
+
         if (countdown > 0)
         {
             countDown.gameObject.SetActive(true);
@@ -173,65 +209,120 @@ public class grappling : MonoBehaviour
             countdown -= Time.fixedDeltaTime;
             countdown = Mathf.FloorToInt(countdown);
             int dis = (int)(countdown / 100);
-            int mili= (int)(countdown % 100);
-            countDown.text = string.Format("{0:00}:{1:00}", dis, mili);
+
+            countDown.text = dis.ToString();
         }
         else countDown.gameObject.SetActive(false);
+
+        if (rb.velocity.magnitude >= 25 && windCount==0)
+        {
+            playerSource.clip = SoundManager.soundManager.SoundDic["swing"];
+            SoundManager.soundManager.PlayerSound("swing");
+            Animator.SetBool("isAttack", true);
+            isAttacking = true;
+            windCount++;
+        }
+
+        if (rb.velocity.magnitude < 10)
+        {
+            if (playerSource.clip == SoundManager.soundManager.SoundDic["swing"] && windCount == 1)
+            {
+                windCount = 0;
+                playerSource.Stop();
+                SoundManager.soundManager.PlayerSound("endswing");
+
+
+            }
+        }
     }
     private void FixedUpdate()
     {
-        controller.Move(horizontalMove*Time.fixedDeltaTime,false,jump);
+        controller.Move(horizontalMove*Time.fixedDeltaTime,false,false);
         jump = false;
         if (Hp <= 0)
         {
+            SoundManager.soundManager.PlaySound("playerdie");
             isDead = true;
-            StartCoroutine(Dead());
+            Animator.SetBool("isDead", true);
         }
+        
     }
+
+
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if(horizontalMove >= 0)
             transform.rotation = Quaternion.Euler(0,transform.rotation.y,0);
         else if(horizontalMove < 0)
             transform.rotation = Quaternion.Euler(0, transform.rotation.y, 0);
+        //Debug.Log(1);
+        jumpCount = 0;
+
+        SoundManager.soundManager.PlayerSound("impact");
+
+        Animator.SetBool("isAttack", false);
 
         Animator.SetBool("jump", false);
-        if (collision.gameObject.tag == "aHit")
+        isDashed = false;
+
+        if (collision.collider.tag == "aHit")
         {
+            SoundManager.soundManager.PlayerSound("ahit");
             Enemies enemy = collision.gameObject.GetComponent<Enemies>();
-            //Debug.Log(enemy.Damage);
-            Hp -= enemy.Damage;
-            //Debug.Log(Hp);
-            StartCoroutine(GetHit());
+            if (!isAttacking)
+            { 
+                //Debug.Log(enemy.Damage);
+                Hp -= enemy.Damage;
+                //Debug.Log(Hp);
+                StartCoroutine(GetHit());
+            }else
+            {
+                Debug.Log(enemy.Hp);
+                enemy.TakeDamage(damage);
+            }
         }
         if (collision.gameObject.tag == "death")
         {
-            Hp = 0;
+            if (!isAttacking)
+            {
+                Hp -= 50;
+                StartCoroutine(GetHit());
+            }
         }
-
+        if(collision.gameObject.tag=="Finish")
+        {
+            Animator.SetBool("goToDoor", true);
+        }
+        isAttacking = false;
     }
 
-    IEnumerator Dead()
+    public void Dead()
     {
         distanceJoint.enabled = false;
         lineRenderer.enabled = false;
-        Animator.SetBool("isDead", true);
-        yield return new WaitForSeconds(1f);
         Animator.SetBool("isDead", false);
+        if(scene.name=="Boss")
+        {
+            transform.position = new Vector3(transform.position.x, 3.8f, 0);
+            Hp = 100;
+            isDead = false;
+            return;
+        }
         transform.position = Checkpoint;
         Hp = 100;
         isDead = false;
     }
 
-    IEnumerator Reload()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            yield return new WaitForSeconds(1);
-            NumBullet++;
-        }
-        OutOfBu = false;
-    }
+    //IEnumerator Reload()
+    //{
+    //    for (int i = 0; i < 4; i++)
+    //    {
+    //        yield return new WaitForSeconds(1);
+    //        NumBullet++;
+    //    }
+    //    OutOfBu = false;
+    //}
     IEnumerator GetHit()
     {
         //Debug.Log("hit!");
@@ -245,12 +336,13 @@ public class grappling : MonoBehaviour
     {
         //Animator.SetBool("isHitted", true);
 
+
+
         if (collision.gameObject.tag == "aHit")
         {
-
-            Hp -= 20;
+            Enemies e = collision.GetComponent<Enemies>();
+            Hp -= e.Damage;
             StartCoroutine(GetHit());
-            
         }
 
         if (collision.gameObject.tag == "checkpoint")
@@ -278,12 +370,37 @@ public class grappling : MonoBehaviour
             
             countdown = 3100;
         }
+        if (collision.gameObject.name == "gateControl")
+        {
 
+            countdown = 0;
+        }
     }
 
     public void Shoot()
     {
         Instantiate(bullet, shootPoint.position, shootPoint.rotation);
+    }
+    void Dash()
+    {
+        SoundManager.soundManager.PlayerSound("hit");
+        boxCol.enabled = false;
+        Animator.SetBool("isDash", true);
+        rb.gravityScale = 0;
+        rb.AddForce(Vector2.right*horizontalMove*5f);
+        isDashed = true;
+    }
+    public void endDash()
+    {
+        Animator.SetBool("isDash", false);
+        boxCol.enabled = true;
+        rb.gravityScale = 2;
+    }
+
+    public void LoadNextLevel()
+    {
+        GameManager.gm.LoadNextLevel();
+        Animator.SetBool("goToDoor", false);
     }
 
 }

@@ -26,13 +26,12 @@ public class buttonController : MonoBehaviour
         {
             buttonator.SetBool("pressed", true);
             StartCoroutine(gateControll());
-            zoomin.gameObject.SetActive(true);
         }
     }
     IEnumerator gateControll()
     {
         gateator.SetBool("open", true);
-        yield return new WaitForSeconds(60);
+        yield return new WaitForSeconds(120);
         gateator.SetBool("open", false);
     }    
 }

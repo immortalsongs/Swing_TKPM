@@ -92,7 +92,7 @@ public class gameMaster : MonoBehaviour
             string[] temp = new string[6];
             temp[0] = "Good job getting up here";
             temp[1] = "I guess it's impressive";
-            temp[2] = "IF YOU DIDN'T TAKE THAT MUCH TIME";
+            temp[2] = "...";
             temp[3] = "Oh, and";
             temp[4] = "...";
             temp[5] = "Left click to shoot";
@@ -109,9 +109,11 @@ public class gameMaster : MonoBehaviour
         }
         if (count == 4)
         {
-            string[] temp = new string[2];
+            string[] temp = new string[3];
             temp[0] = "The blue one is safe";
             temp[1] = "But you can't stand still on it";
+            temp[2] = "Yes you can wall jump";
+
             for (int i = 0; i < 2; i++)
             {
                 text.text = "";
@@ -148,7 +150,7 @@ public class gameMaster : MonoBehaviour
         }
         if (count == 4)
         {
-            transform.position = new Vector3(241, 155, 2);
+            transform.position = new Vector3(275, 137, 2);
 
         }
     }

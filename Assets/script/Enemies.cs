@@ -30,7 +30,7 @@ abstract public class Enemies:MonoBehaviour
 
     public void Dead()
     {
-
+        Destroy(gameObject);
     }
 
 }

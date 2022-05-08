@@ -40,7 +40,7 @@ public class maskdude : Enemies
         }
         if(isDead())
         {
-            Destroy(gameObject);
+            Dead();
         }
     }
 
@@ -52,12 +52,7 @@ public class maskdude : Enemies
         {
 
             TakeDamage(20);
-
         }
     }
 
-        public void Attack()
-    {
-
-    }
 }

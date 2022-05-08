@@ -9,14 +9,15 @@ TagManager:
   - checkpoint
   - zoom out
   - zoom in
+  - camera
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - camera
   - Water
   - UI
-  - 
+  - hockAble
   - 
   - 
   - 
