@@ -26,6 +26,7 @@ public class buttonController : MonoBehaviour
         {
             buttonator.SetBool("pressed", true);
             StartCoroutine(gateControll());
+            collision.gameObject.transform.position = new Vector3(-5.3f, -2.33f, 0);
         }
     }
     IEnumerator gateControll()

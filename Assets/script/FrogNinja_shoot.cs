@@ -13,7 +13,7 @@ public class FrogNinja_shoot : MonoBehaviour
     private void Update()
     {
         //Debug.Log(ninja_.Hp);
-        if(ninja_.Hp<=0)
+        if(ninja_.isDead())
         {
             Destroy(gameObject);
         }

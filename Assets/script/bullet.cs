@@ -16,7 +16,7 @@ public class bullet : Enemies
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject.tag!="camera"&& collision.gameObject.tag != "hockAble")
+        if(collision.gameObject.tag!="camera"&& collision.gameObject.tag != "hockAble" && collision.gameObject.tag != "aHit")
         {
             Destroy(gameObject);
         }

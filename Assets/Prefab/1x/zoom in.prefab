@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7863658595568828208}
   - component: {fileID: 7863658595568828239}
   - component: {fileID: 7863658595568828238}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: zoom in
   m_TagString: zoom in
   m_Icon: {fileID: 0}

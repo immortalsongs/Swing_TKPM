@@ -9,6 +9,12 @@ public class SoundManager : MonoBehaviour
     public AudioSource audioSource;
     AudioSource playerSource;
     public static SoundManager soundManager;
+
+    //private void Awake()
+    //{
+    //    DontDestroyOnLoad(this.gameObject);
+    //}
+
     // Start is called before the first frame update
     void Start()
     {

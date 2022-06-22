@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Timeline;
 using UnityEngine.Playables;
 
+
 public class grappling : MonoBehaviour
 {
     public Camera mainCamnera;
@@ -34,19 +35,16 @@ public class grappling : MonoBehaviour
     bool isDead;
 
     int Hp = 100;
-    int damage = 100;
+    int damage = 101;
     int NumBullet = 10;
-    bool OutOfBu;
     bool isAttacking=false;
 
-    public Text countDown;
+    public Text countDown, accele;
     float countdown;
 
     CinemachineCameraOffset cinemachine;
 
-    CinemachineVirtualCamera vcam;
-
-    public Slider HPslider, Bulletslider;
+    public Slider HPslider;
 
     int jumpCount = 0;
 
@@ -56,43 +54,78 @@ public class grappling : MonoBehaviour
 
     Scene scene;
 
+    public Animator GMani;
+
+    public GameObject Nebula, FireBall;
+    public bool isNebula, isFireBall;
+
+    public Button NebulaButton, FireBallButton;
+
+    bool onChild = false;
+
+    CinemachineBrain brain;
+
+    CinemachineVirtualCamera ActiveCamera
+    {
+        get { return brain == null ? null : brain.ActiveVirtualCamera as CinemachineVirtualCamera; }
+    }
+    CinemachineVirtualCamera vcam;
+
+    //private void Awake()
+    //{
+    //    DontDestroyOnLoad(this.gameObject);
+    //}
 
     // Start is called before the first frame update
     void Start()
     {
-        OutOfBu = false;
         countdown = 0;
         distanceJoint.enabled = false;
         Checkpoint= new Vector3(-140.7f, -125.9f, 0);
         isDead = false;
 
-        playerSource = GetComponent<AudioSource>();
+        isNebula = GameManager.gm.isNebula;
+        isFireBall = GameManager.gm.isFireBall;
 
-        var camera = Camera.main;
-        var brain = (camera == null) ? null : camera.GetComponent<CinemachineBrain>();
-        vcam = (brain == null) ? null : brain.ActiveVirtualCamera as CinemachineVirtualCamera;
+        playerSource = GetComponent<AudioSource>();
 
         boxCol = gameObject.GetComponent<BoxCollider2D>();
 
+        GameObject mainCamera = GameObject.Find("Main Camera");
+        brain = mainCamera.GetComponent<CinemachineBrain>();
+
         scene = SceneManager.GetActiveScene();
-        //SoundManager.soundManager.PlaySound("start");
-        //audioS.PlayOneShot(_start);
+        mainCamnera = GameObject.Find("Main Camera").GetComponent<Camera>();
+
+        if (scene.name == "Update")
+        {
+            if (isNebula)
+            {
+                NebulaButton.gameObject.SetActive(false);
+            }
+            if (isFireBall)
+            {
+                FireBallButton.gameObject.SetActive(false);
+            }
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
         HPslider.value = Hp;
-        Bulletslider.value = NumBullet;
         if (!isDead)
         {
             //horizontalMove = 0;
             Vector2 mousePos = (Vector2)mainCamnera.ScreenToWorldPoint(Input.mousePosition);
             Vector3 mousePos3 = (Vector2)mainCamnera.ScreenToWorldPoint(Input.mousePosition);
             //print(mousePos);
+            accele.text = GameManager.gm.Acceleration.ToString();
             mainCamnera.transform.position = new Vector3(transform.position.x, transform.position.y, -10);
-            if (Input.GetKeyDown(KeyCode.Mouse0))
+            if (Input.GetKeyDown(KeyCode.Mouse0)&& scene.name!="Update")
             {
+                
+
                 if (NumBullet > 0)
                 {
 
@@ -152,24 +185,16 @@ public class grappling : MonoBehaviour
             {
                 lineRenderer.SetPosition(1, transform.position);
             }
-
-            //if (NumBullet > 0 && !OutOfBu)
-            //{
-            //    if (Input.GetKeyDown(KeyCode.Mouse1))
-            //    {
-            //        Shoot();
-            //        NumBullet--;
-            //        if(NumBullet==0)
-            //        {
-            //            OutOfBu = true;
-            //            StartCoroutine(Reload());
-            //        }
-            //    }
-            //}
             
         }
-        
-        if(Input.GetKeyDown(KeyCode.Alpha1))
+        if (Hp <= 0)
+        {
+            SoundManager.soundManager.PlaySound("playerdie");
+            isDead = true;
+            Animator.SetBool("isDead", true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             transform.position= new Vector3(-140.7f, -125.9f, 0);
         }
@@ -193,7 +218,10 @@ public class grappling : MonoBehaviour
         {
             transform.position = new Vector3(603, 224, 0);
         }
-
+        if (Input.GetKeyDown(KeyCode.Alpha0))
+        {
+            GameManager.gm.Acceleration = 1000;
+        }
 
 
         if (Input.GetKeyDown(KeyCode.LeftShift))
@@ -221,6 +249,15 @@ public class grappling : MonoBehaviour
             Animator.SetBool("isAttack", true);
             isAttacking = true;
             windCount++;
+            GameManager.gm.IncreaseAccele();
+            if(isNebula)
+            {
+                Nebula.SetActive(true);
+            }
+            if(isFireBall)
+            {
+                FireBall.SetActive(true);
+            }
         }
 
         if (rb.velocity.magnitude < 10)
@@ -231,24 +268,25 @@ public class grappling : MonoBehaviour
                 playerSource.Stop();
                 SoundManager.soundManager.PlayerSound("endswing");
 
-
+                Nebula.SetActive(false);
+                FireBall.SetActive(false);
             }
         }
+
+        
     }
     private void FixedUpdate()
     {
         controller.Move(horizontalMove*Time.fixedDeltaTime,false,false);
         jump = false;
-        if (Hp <= 0)
-        {
-            SoundManager.soundManager.PlaySound("playerdie");
-            isDead = true;
-            Animator.SetBool("isDead", true);
-        }
-        
+        vcam = ActiveCamera;
     }
 
-
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        //jumpCount = 0;
+        Animator.SetBool("jump", false);
+    }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
@@ -259,7 +297,7 @@ public class grappling : MonoBehaviour
         //Debug.Log(1);
         jumpCount = 0;
 
-        SoundManager.soundManager.PlayerSound("impact");
+        //
 
         Animator.SetBool("isAttack", false);
 
@@ -278,27 +316,34 @@ public class grappling : MonoBehaviour
                 StartCoroutine(GetHit());
             }else
             {
-                Debug.Log(enemy.Hp);
                 enemy.TakeDamage(damage);
+                if(enemy.gameObject.name== "Game_Master 1")
+                {
+                    GMani.SetBool("isHit", true);
+                }
             }
         }
+        isAttacking = false;
         if (collision.gameObject.tag == "death")
         {
-            if (!isAttacking)
-            {
-                Hp -= 50;
-                StartCoroutine(GetHit());
-            }
+            //SoundManager.soundManager.PlayerSound("impact");
+            Hp -= 100;
+            StartCoroutine(GetHit());
         }
         if(collision.gameObject.tag=="Finish")
         {
             Animator.SetBool("goToDoor", true);
         }
-        isAttacking = false;
+        if (collision.gameObject.tag == "FinishUpdate")
+        {
+            GameManager.gm.LoadNextLevel();
+        }
+        
     }
 
     public void Dead()
     {
+        vcam.m_Lens.OrthographicSize = 12;
         distanceJoint.enabled = false;
         lineRenderer.enabled = false;
         Animator.SetBool("isDead", false);
@@ -309,9 +354,12 @@ public class grappling : MonoBehaviour
             isDead = false;
             return;
         }
+        PlayerPrefs.SetInt("Acceleration", 0);
         transform.position = Checkpoint;
         Hp = 100;
         isDead = false;
+        GameManager.gm.Acceleration = 0;
+        accele.text = GameManager.gm.Acceleration.ToString();
     }
 
     //IEnumerator Reload()
@@ -332,19 +380,34 @@ public class grappling : MonoBehaviour
         Animator.SetBool("isHitted", false);
     }
 
+
+    public void OnTriggerEnterChild()
+    {
+        onChild = true;
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         //Animator.SetBool("isHitted", true);
 
-
+        
 
         if (collision.gameObject.tag == "aHit")
         {
-            Enemies e = collision.GetComponent<Enemies>();
-            Hp -= e.Damage;
-            StartCoroutine(GetHit());
+            Enemies enemy = collision.GetComponent<Enemies>();
+            if (!isAttacking||!onChild)
+            {
+                //Debug.Log(enemy.Damage);
+                Hp -= enemy.Damage;
+                //Debug.Log(Hp);
+                StartCoroutine(GetHit());
+            }
+            else
+            {
+                enemy.TakeDamage(damage);
+            }
         }
-
+        isAttacking = false;
         if (collision.gameObject.tag == "checkpoint")
         {
             Checkpoint = collision.transform.position;
@@ -352,28 +415,28 @@ public class grappling : MonoBehaviour
 
         if (collision.gameObject.tag == "death")
         {
-            Hp = 0;
+            if (!onChild)
+            {
+                Hp -= 100;
+                StartCoroutine(GetHit());
+            }
         }
+        onChild = false;
 
         if(collision.gameObject.tag=="zoom out")
         {
-            while(vcam.m_Lens.OrthographicSize < 30)
-                vcam.m_Lens.OrthographicSize += Time.deltaTime;
+            vcam.m_Lens.OrthographicSize = 20;
         }
         if (collision.gameObject.tag == "zoom in")
         {
-            while (vcam.m_Lens.OrthographicSize > 12)
-                vcam.m_Lens.OrthographicSize -= Time.deltaTime;
+            vcam.m_Lens.OrthographicSize = 12;
         }
         if (collision.gameObject.name=="button1")
         {
-            
-            countdown = 3100;
-        }
-        if (collision.gameObject.name == "gateControl")
-        {
-
-            countdown = 0;
+            //if (scene.name == "Level2")
+            //{
+                
+            //}
         }
     }
 
@@ -399,8 +462,28 @@ public class grappling : MonoBehaviour
 
     public void LoadNextLevel()
     {
-        GameManager.gm.LoadNextLevel();
+        GameManager.gm.LoadUpdate();
         Animator.SetBool("goToDoor", false);
     }
+
+    public void NebulaUpdate()
+    {
+        if (GameManager.gm.Acceleration >= 200)
+        {
+            GameManager.gm.Acceleration -= 200;
+            GameManager.gm.isNebula = true;
+            NebulaButton.gameObject.SetActive(false);
+
+        }
+    }    
+    public void FireBallUpdate()
+    {
+        if (GameManager.gm.Acceleration >= 500)
+        {
+            GameManager.gm.Acceleration -= 500;
+            GameManager.gm.isFireBall = true;
+            FireBallButton.gameObject.SetActive(false);
+        }
+    }    
 
 }

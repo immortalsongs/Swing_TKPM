@@ -28,10 +28,10 @@ public class ninja_frog : Enemies
         if (player.transform.position.x < transform.position.x)
             transform.rotation = Quaternion.Euler(0, 180, 0);
         else transform.rotation = Quaternion.Euler(0, 0, 0);
-        if (isDead())
-        {
-            Dead();
-        }
+        //if (isDead())
+        //{
+        //    Destroy(gameObject);
+        //}
     }
 
 
